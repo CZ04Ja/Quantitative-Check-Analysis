@@ -1,0 +1,390 @@
+[
+  {
+    "label": "POST_COVID",
+    "window": [
+      "2020-06-01",
+      "2020-12-31"
+    ],
+    "warmup_ok": false,
+    "aligned_bars": 19866,
+    "trading_days": 50.9,
+    "underlying_xlk_total_pct": 22.76,
+    "underlying_xlk_maxdd_pct": -14.58,
+    "gate_on_pct": 0.0,
+    "v3_sharpe_1bp": 0.0,
+    "v3_ann_pct": 0.0,
+    "v3_maxdd_pct": 0.0,
+    "v3_calmar": 0.0,
+    "n_trades": 0,
+    "trades_per_day": 0.0,
+    "trades_per_symbol": {
+      "AAPL": 0,
+      "AMD": 0,
+      "MSFT": 0,
+      "NVDA": 0
+    },
+    "gross_pnl_per_symbol_bps": {
+      "AAPL": 0.0,
+      "AMD": 0.0,
+      "MSFT": 0.0,
+      "NVDA": 0.0
+    },
+    "bootstrap": {
+      "median": 0.0,
+      "p05": 0.0,
+      "p95": 0.0,
+      "p_gt_0": 0.0
+    },
+    "monthly": [
+      {
+        "month": "2020-07",
+        "bars": 654,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      },
+      {
+        "month": "2020-08",
+        "bars": 2506,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      },
+      {
+        "month": "2020-09",
+        "bars": 4191,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      },
+      {
+        "month": "2020-10",
+        "bars": 4168,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      },
+      {
+        "month": "2020-11",
+        "bars": 4463,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      },
+      {
+        "month": "2020-12",
+        "bars": 3884,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_COVID"
+      }
+    ]
+  },
+  {
+    "label": "TECH_BEAR_2022",
+    "window": [
+      "2022-01-01",
+      "2022-12-31"
+    ],
+    "warmup_ok": true,
+    "aligned_bars": 64914,
+    "trading_days": 166.4,
+    "underlying_xlk_total_pct": -28.62,
+    "underlying_xlk_maxdd_pct": -35.66,
+    "gate_on_pct": 30.21,
+    "v3_sharpe_1bp": -2.058,
+    "v3_ann_pct": -24.72,
+    "v3_maxdd_pct": -20.01,
+    "v3_calmar": -1.236,
+    "n_trades": 155,
+    "trades_per_day": 0.931,
+    "trades_per_symbol": {
+      "AAPL": 38,
+      "AMD": 33,
+      "MSFT": 47,
+      "NVDA": 37
+    },
+    "gross_pnl_per_symbol_bps": {
+      "AAPL": 82.21,
+      "AMD": -916.94,
+      "MSFT": -3.87,
+      "NVDA": -534.82
+    },
+    "bootstrap": {
+      "median": -2.106,
+      "p05": -4.474,
+      "p95": 0.218,
+      "p_gt_0": 0.076
+    },
+    "monthly": [
+      {
+        "month": "2022-01",
+        "bars": 5685,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-02",
+        "bars": 5260,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-03",
+        "bars": 6547,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-04",
+        "bars": 5525,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-05",
+        "bars": 6410,
+        "sum_pnl_bps": -452.7,
+        "sharpe": -3.78,
+        "trades": 24,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-06",
+        "bars": 6104,
+        "sum_pnl_bps": -245.0,
+        "sharpe": -3.31,
+        "trades": 13,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-07",
+        "bars": 5469,
+        "sum_pnl_bps": -9.23,
+        "sharpe": -1.682,
+        "trades": 2,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-08",
+        "bars": 4778,
+        "sum_pnl_bps": 5.9,
+        "sharpe": 0.568,
+        "trades": 2,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-09",
+        "bars": 5164,
+        "sum_pnl_bps": -849.54,
+        "sharpe": -10.93,
+        "trades": 24,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-10",
+        "bars": 5051,
+        "sum_pnl_bps": 439.91,
+        "sharpe": 4.059,
+        "trades": 35,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-11",
+        "bars": 4414,
+        "sum_pnl_bps": -72.17,
+        "sharpe": -0.789,
+        "trades": 29,
+        "window": "TECH_BEAR_2022"
+      },
+      {
+        "month": "2022-12",
+        "bars": 4507,
+        "sum_pnl_bps": -450.26,
+        "sharpe": -6.266,
+        "trades": 27,
+        "window": "TECH_BEAR_2022"
+      }
+    ]
+  },
+  {
+    "label": "BANKING_2023",
+    "window": [
+      "2023-02-15",
+      "2023-04-30"
+    ],
+    "warmup_ok": false,
+    "aligned_bars": 11223,
+    "trading_days": 28.8,
+    "underlying_xlk_total_pct": 5.72,
+    "underlying_xlk_maxdd_pct": -6.85,
+    "gate_on_pct": 0.0,
+    "v3_sharpe_1bp": 0.0,
+    "v3_ann_pct": 0.0,
+    "v3_maxdd_pct": 0.0,
+    "v3_calmar": 0.0,
+    "n_trades": 0,
+    "trades_per_day": 0.0,
+    "trades_per_symbol": {
+      "AAPL": 0,
+      "AMD": 0,
+      "MSFT": 0,
+      "NVDA": 0
+    },
+    "gross_pnl_per_symbol_bps": {
+      "AAPL": 0.0,
+      "AMD": 0.0,
+      "MSFT": 0.0,
+      "NVDA": 0.0
+    },
+    "bootstrap": {
+      "median": 0.0,
+      "p05": 0.0,
+      "p95": 0.0,
+      "p_gt_0": 0.0
+    },
+    "monthly": [
+      {
+        "month": "2023-02",
+        "bars": 1888,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "BANKING_2023"
+      },
+      {
+        "month": "2023-03",
+        "bars": 5605,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "BANKING_2023"
+      },
+      {
+        "month": "2023-04",
+        "bars": 3730,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "BANKING_2023"
+      }
+    ]
+  },
+  {
+    "label": "POST_BEAR_2023",
+    "window": [
+      "2023-05-01",
+      "2023-12-31"
+    ],
+    "warmup_ok": true,
+    "aligned_bars": 34825,
+    "trading_days": 89.3,
+    "underlying_xlk_total_pct": 27.59,
+    "underlying_xlk_maxdd_pct": -12.01,
+    "gate_on_pct": 6.44,
+    "v3_sharpe_1bp": 0.197,
+    "v3_ann_pct": 0.76,
+    "v3_maxdd_pct": -2.49,
+    "v3_calmar": 0.306,
+    "n_trades": 12,
+    "trades_per_day": 0.134,
+    "trades_per_symbol": {
+      "AAPL": 3,
+      "AMD": 3,
+      "MSFT": 4,
+      "NVDA": 2
+    },
+    "gross_pnl_per_symbol_bps": {
+      "AAPL": 80.59,
+      "AMD": -58.29,
+      "MSFT": 3.73,
+      "NVDA": 19.92
+    },
+    "bootstrap": {
+      "median": 0.156,
+      "p05": -0.531,
+      "p95": 0.919,
+      "p_gt_0": 0.66
+    },
+    "monthly": [
+      {
+        "month": "2023-05",
+        "bars": 4125,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-06",
+        "bars": 4627,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-07",
+        "bars": 3890,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-08",
+        "bars": 4240,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-09",
+        "bars": 4041,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-10",
+        "bars": 5773,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-11",
+        "bars": 4227,
+        "sum_pnl_bps": 26.96,
+        "sharpe": 0.566,
+        "trades": 12,
+        "window": "POST_BEAR_2023"
+      },
+      {
+        "month": "2023-12",
+        "bars": 3902,
+        "sum_pnl_bps": 0.0,
+        "sharpe": 0.0,
+        "trades": 0,
+        "window": "POST_BEAR_2023"
+      }
+    ]
+  }
+]

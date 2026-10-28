@@ -1,0 +1,878 @@
+from __future__ import annotations
+
+import os
+import time
+import math
+import json
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Iterable, Optional
+
+import numpy as np
+import pandas as pd
+import requests
+
+
+# =========================================================
+# QTC RESEARCH DATA DOWNLOADER + FEATURE BUILDER
+# =========================================================
+# What it does:
+# 1) pull minute bars from QTC REST API
+# 2) save raw parquet per symbol
+# 3) combine raw data
+# 4) build a research panel for:
+#    - baseline trend alpha
+#    - regime detection
+#    - dynamic stop-loss research
+#    - Kelly / position sizing research
+#    - proxy filters (SPY / QQQ / sector ETFs)
+#
+# Output:
+#   data_qtc/raw/*.parquet
+#   data_qtc/combined/raw_all.parquet
+#   data_qtc/combined/research_panel.parquet
+#   data_qtc/combined/research_panel.csv
+#
+# Notes:
+# - timestamps returned by QTC are UTC
+# - some volume/trade_count/vwap values may be null
+# - this script is for OFFLINE research, not live strategy execution
+# =========================================================
+
+
+BASE_URL = "https://api.qtcq.xyz"
+
+# =========================================================
+# Set QTC_API_KEY in the local environment.
+# Without this, /api/v1/market-data/bars returns 422.
+# =========================================================
+API_KEY = os.environ.get("QTC_API_KEY", "").strip()
+
+# Data source strategy:
+#   "auto"     -> QTC -> Alpaca -> yfinance -> stooq (first one that works)
+#   "qtc"      -> only QTC
+#   "alpaca"   -> only Alpaca (paper account, IEX feed, MINUTE bars, free)
+#   "yfinance" -> only yfinance (1m limited to last 7 days)
+#   "stooq"    -> only stooq (daily bars)
+DATA_SOURCE = os.environ.get("QTC_DATA_SOURCE", "auto").lower()
+
+# =========================================================
+# Alpaca Paper Trading credentials (free):
+#   1. sign up at https://alpaca.markets/ (select PAPER)
+#   2. grab API Key ID + Secret from dashboard
+#   3. set env vars ALPACA_API_KEY / ALPACA_SECRET_KEY
+# Same IEX feed QTC uses, but without their broken parquet files.
+# =========================================================
+ALPACA_API_KEY = os.environ.get("ALPACA_API_KEY", "").strip()
+ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "").strip()
+ALPACA_FEED = os.environ.get("ALPACA_FEED", "iex")  # iex (free) or sip (paid)
+
+# yfinance interval. Yahoo's hard limits:
+#   1m   -> only last 7 days
+#   5m   -> only last 60 days
+#   1h   -> only last 730 days (~2y) <- good default for ~15 months
+#   1d   -> full history
+YF_INTERVAL = os.environ.get("QTC_YF_INTERVAL", "1h")
+
+RAW_DIR = Path("data_qtc/raw")
+COMBINED_DIR = Path("data_qtc/combined")
+RAW_DIR.mkdir(parents=True, exist_ok=True)
+COMBINED_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@dataclass
+class Config:
+    # Main research universe
+    target_symbols: list[str]
+    proxy_symbols: list[str]
+
+    # Date range in UTC
+    start_date: str  # "YYYY-MM-DD"
+    end_date: str    # "YYYY-MM-DD"
+
+    # API / request
+    timeout_sec: int = 30
+    sleep_between_calls: float = 0.15
+    max_retries: int = 3
+
+    # Feature params
+    fast_window: int = 20
+    slow_window: int = 60
+    vol_window: int = 20
+    volume_baseline_window: int = 20
+    stop_k: float = 2.0
+
+    # Labels
+    future_horizons: tuple[int, ...] = (5, 15, 30)
+
+
+CFG = Config(
+    target_symbols=[
+        "NVDA", "AAPL", "MSFT", "AMD"
+    ],
+    proxy_symbols=[
+        # SMH / SOXX are NOT in QTC's symbol universe.
+        # XLK (tech sector ETF) is available and is a reasonable proxy.
+        "SPY", "QQQ", "XLK"
+    ],
+    start_date="2025-01-01",
+    end_date="2026-03-31",
+)
+
+
+# -----------------------------
+# Helpers
+# -----------------------------
+def safe_float(x) -> Optional[float]:
+    try:
+        v = float(x)
+        if math.isfinite(v):
+            return v
+    except Exception:
+        return None
+    return None
+
+
+def utc_day_range(day: pd.Timestamp) -> tuple[str, str]:
+    """
+    Return [start, end) ISO strings in UTC for one full calendar day.
+    We fetch by day endpoint below, but keep this here in case you want range endpoint later.
+    """
+    start = pd.Timestamp(day.date(), tz="UTC")
+    end = start + pd.Timedelta(days=1)
+    return start.isoformat().replace("+00:00", "Z"), end.isoformat().replace("+00:00", "Z")
+
+
+def daterange_utc(start_date: str, end_date: str) -> list[pd.Timestamp]:
+    start = pd.Timestamp(start_date, tz="UTC")
+    end = pd.Timestamp(end_date, tz="UTC")
+    days = pd.date_range(start.normalize(), end.normalize(), freq="D", tz="UTC")
+    return list(days)
+
+
+def request_json(url: str, timeout_sec: int = 30, max_retries: int = 3) -> Optional[dict]:
+    """
+    Return parsed JSON, or None if server says 404 (no data for that window).
+    Only retries on network / 5xx / 429 errors - not on 4xx like 404.
+    """
+    last_err = None
+    for i in range(max_retries):
+        try:
+            r = requests.get(url, timeout=timeout_sec)
+            if r.status_code == 404:
+                return None
+            if 400 <= r.status_code < 500 and r.status_code != 429:
+                r.raise_for_status()
+            r.raise_for_status()
+            return r.json()
+        except requests.HTTPError as e:
+            status = getattr(e.response, "status_code", None)
+            if status is not None and 400 <= status < 500 and status != 429:
+                raise
+            last_err = e
+            time.sleep(0.5 * (i + 1))
+        except Exception as e:
+            last_err = e
+            time.sleep(0.5 * (i + 1))
+    raise RuntimeError(f"Request failed after {max_retries} retries: {url}\n{last_err}")
+
+
+# -----------------------------
+# API fetchers
+# -----------------------------
+def get_available_symbols(cfg: Config) -> dict:
+    url = f"{BASE_URL}/api/v1/market-data/symbols"
+    return request_json(url, timeout_sec=cfg.timeout_sec, max_retries=cfg.max_retries)
+
+
+def _normalize_bars_to_df(symbol: str, bars: list[dict]) -> pd.DataFrame:
+    """Turn a list of bar dicts into our canonical DataFrame shape."""
+    if not bars:
+        return pd.DataFrame()
+    df = pd.DataFrame(bars)
+    df["symbol"] = symbol.upper()
+    if "ticker" not in df.columns:
+        df["ticker"] = df["symbol"]
+    if "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+    for c in ["open", "high", "low", "close", "volume", "trade_count", "vwap"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    keep = [c for c in [
+        "ticker", "symbol", "timestamp",
+        "open", "high", "low", "close", "volume", "trade_count", "vwap"
+    ] if c in df.columns]
+    return (
+        df[keep]
+        .dropna(subset=["timestamp", "close"])
+        .sort_values(["symbol", "timestamp"])
+        .reset_index(drop=True)
+    )
+
+
+def fetch_bars_multi(
+    symbols: list[str],
+    start_iso: str,
+    end_iso: str,
+    cfg: Config,
+) -> dict[str, pd.DataFrame]:
+    """
+    GET /api/v1/market-data/bars?symbols=A,B,C&start=...&end=...&key=...
+
+    The real QTC endpoint (see https://api.qtcq.xyz/docs). Supports up to 20
+    symbols per call. Returns a dict {symbol -> DataFrame}.
+    """
+    if not API_KEY:
+        raise RuntimeError(
+            "No API key. Set QTC_API_KEY env var or edit API_KEY in fetch_data.py."
+        )
+    if len(symbols) > 20:
+        raise ValueError("bars endpoint allows at most 20 symbols per call")
+
+    symbols_csv = ",".join(s.upper() for s in symbols)
+    url = (
+        f"{BASE_URL}/api/v1/market-data/bars"
+        f"?symbols={symbols_csv}&start={start_iso}&end={end_iso}&key={API_KEY}"
+    )
+    payload = request_json(url, timeout_sec=cfg.timeout_sec, max_retries=cfg.max_retries)
+
+    out: dict[str, pd.DataFrame] = {s.upper(): pd.DataFrame() for s in symbols}
+    if not payload:
+        return out
+
+    # Single symbol response shape
+    if "bars" in payload and "symbol" in payload:
+        s = str(payload["symbol"]).upper()
+        out[s] = _normalize_bars_to_df(s, payload.get("bars") or [])
+        return out
+
+    # Multi-symbol response shape: {"data": {"AAPL": {"bars": [...]}, ...}}
+    data_map = payload.get("data") or {}
+    for s, sym_payload in data_map.items():
+        bars = (sym_payload or {}).get("bars") or []
+        out[str(s).upper()] = _normalize_bars_to_df(s, bars)
+    return out
+
+
+# -----------------------------
+# Fallback data sources
+# -----------------------------
+def _empty_bar_frame() -> pd.DataFrame:
+    return pd.DataFrame(columns=[
+        "ticker", "symbol", "timestamp",
+        "open", "high", "low", "close", "volume", "trade_count", "vwap",
+    ])
+
+
+def _finalize_bar_df(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    """Ensure canonical columns & types. Accepts any frame with OHLC + a time col."""
+    if df is None or df.empty:
+        return _empty_bar_frame()
+    df = df.copy()
+    df.columns = [str(c).lower() for c in df.columns]
+
+    # Time column: could be index "datetime" / "date" / ...
+    for cand in ("timestamp", "datetime", "date"):
+        if cand in df.columns:
+            df = df.rename(columns={cand: "timestamp"})
+            break
+    if "timestamp" not in df.columns:
+        return _empty_bar_frame()
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+    df["symbol"] = symbol.upper()
+    df["ticker"] = symbol.upper()
+
+    for c in ["open", "high", "low", "close", "volume"]:
+        if c not in df.columns:
+            df[c] = np.nan
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    if "trade_count" not in df.columns:
+        df["trade_count"] = np.nan
+    if "vwap" not in df.columns:
+        df["vwap"] = np.nan
+
+    keep = ["ticker", "symbol", "timestamp",
+            "open", "high", "low", "close", "volume", "trade_count", "vwap"]
+    return (
+        df[keep]
+        .dropna(subset=["timestamp", "close"])
+        .sort_values(["symbol", "timestamp"])
+        .reset_index(drop=True)
+    )
+
+
+def fetch_from_alpaca(
+    symbols: list[str],
+    start_date: str,
+    end_date: str,
+) -> dict[str, pd.DataFrame]:
+    """
+    MINUTE-level bars from Alpaca Markets, IEX feed (same feed QTC uses).
+    Free with a paper account. Paginates automatically via alpaca-py.
+    """
+    try:
+        from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame
+    except ImportError as e:
+        raise RuntimeError(
+            "alpaca-py not installed. Run: pip install alpaca-py"
+        ) from e
+
+    if not ALPACA_API_KEY or not ALPACA_SECRET_KEY:
+        raise RuntimeError(
+            "Missing Alpaca credentials. Set ALPACA_API_KEY & ALPACA_SECRET_KEY "
+            "env vars, or fill them in at the top of fetch_data.py."
+        )
+
+    out: dict[str, pd.DataFrame] = {s.upper(): _empty_bar_frame() for s in symbols}
+    if not symbols:
+        return out
+
+    client = StockHistoricalDataClient(ALPACA_API_KEY, ALPACA_SECRET_KEY)
+
+    start_dt = pd.Timestamp(start_date, tz="UTC").to_pydatetime()
+    end_dt = (pd.Timestamp(end_date, tz="UTC") + pd.Timedelta(days=1)).to_pydatetime()
+
+    req = StockBarsRequest(
+        symbol_or_symbols=[s.upper() for s in symbols],
+        timeframe=TimeFrame.Minute,
+        start=start_dt,
+        end=end_dt,
+        feed=ALPACA_FEED,
+    )
+    print(f"[ALPACA] Requesting {len(symbols)} symbols, feed={ALPACA_FEED} ...")
+    resp = client.get_stock_bars(req)
+    # .df is a MultiIndex (symbol, timestamp) DataFrame
+    big = resp.df
+    if big is None or big.empty:
+        return out
+
+    # Reset so 'symbol' and 'timestamp' become columns
+    big = big.reset_index()
+    for s in symbols:
+        su = s.upper()
+        sub = big[big["symbol"] == su].copy()
+        out[su] = _finalize_bar_df(sub, su)
+    return out
+
+
+def fetch_from_yfinance(
+    symbols: list[str],
+    start_date: str,
+    end_date: str,
+    interval: str = "1h",
+) -> dict[str, pd.DataFrame]:
+    """Bulk download via yfinance. Returns {symbol -> DataFrame} in our schema."""
+    try:
+        import yfinance as yf
+    except ImportError as e:
+        raise RuntimeError(
+            "yfinance not installed. Run: pip install yfinance"
+        ) from e
+
+    out: dict[str, pd.DataFrame] = {s.upper(): _empty_bar_frame() for s in symbols}
+    if not symbols:
+        return out
+
+    # yfinance end is exclusive-ish; pad +1 day so last day is included.
+    end_plus = (pd.Timestamp(end_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+
+    raw = yf.download(
+        tickers=" ".join(symbols),
+        start=start_date,
+        end=end_plus,
+        interval=interval,
+        auto_adjust=False,
+        progress=False,
+        group_by="ticker",
+        threads=True,
+    )
+    if raw is None or raw.empty:
+        return out
+
+    multi = isinstance(raw.columns, pd.MultiIndex)
+    for s in symbols:
+        su = s.upper()
+        if multi:
+            if su in raw.columns.get_level_values(0):
+                sub = raw[su].copy()
+            else:
+                continue
+        else:
+            sub = raw.copy()
+        sub = sub.reset_index()
+        out[su] = _finalize_bar_df(sub, su)
+    return out
+
+
+def fetch_from_stooq(
+    symbols: list[str],
+    start_date: str,
+    end_date: str,
+) -> dict[str, pd.DataFrame]:
+    """Daily bars from stooq via pandas_datareader (only daily is free)."""
+    try:
+        from pandas_datareader import data as pdr
+    except ImportError as e:
+        raise RuntimeError(
+            "pandas-datareader not installed. Run: pip install pandas-datareader"
+        ) from e
+
+    out: dict[str, pd.DataFrame] = {}
+    for s in symbols:
+        su = s.upper()
+        try:
+            df = pdr.DataReader(su, "stooq", start=start_date, end=end_date)
+            if df is None or df.empty:
+                out[su] = _empty_bar_frame()
+                continue
+            df = df.sort_index().reset_index()
+            out[su] = _finalize_bar_df(df, su)
+        except Exception as e:
+            print(f"[WARN] stooq {su}: {e}")
+            out[su] = _empty_bar_frame()
+    return out
+
+
+def _monthly_chunks(start_date: str, end_date: str) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """
+    Break [start_date, end_date] into ~1-month [start, end) windows in UTC.
+    Using range endpoint is much faster than hitting /day for every calendar day.
+    """
+    start = pd.Timestamp(start_date, tz="UTC").normalize()
+    end = pd.Timestamp(end_date, tz="UTC").normalize() + pd.Timedelta(days=1)
+    chunks = []
+    cur = start
+    while cur < end:
+        nxt = min(cur + pd.DateOffset(months=1), end)
+        chunks.append((cur, nxt))
+        cur = nxt
+    return chunks
+
+
+def _iso_no_tz(ts: pd.Timestamp) -> str:
+    """Format as ISO 8601 without timezone suffix (what /bars expects)."""
+    return ts.tz_convert("UTC").strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _probe_qtc_alive(cfg: Config, sample_symbol: str) -> bool:
+    """
+    Do a tiny /bars call to see if QTC can serve historical data at all.
+    Returns True if we got a 2xx with a parseable response, False otherwise.
+    """
+    try:
+        end = pd.Timestamp(cfg.end_date, tz="UTC")
+        start = end - pd.Timedelta(days=2)
+        bars_map = fetch_bars_multi(
+            [sample_symbol],
+            _iso_no_tz(start), _iso_no_tz(end),
+            cfg,
+        )
+        # Even if empty, 200 OK means the server is functioning
+        return sample_symbol.upper() in bars_map
+    except Exception as e:
+        print(f"[PROBE] QTC /bars probe failed: {e}")
+        return False
+
+
+def _download_via_qtc(cfg: Config, chosen: list[str]) -> dict[str, list[pd.DataFrame]]:
+    per_symbol_frames: dict[str, list[pd.DataFrame]] = {s: [] for s in chosen}
+    chunks = _monthly_chunks(cfg.start_date, cfg.end_date)
+    symbol_batches = [chosen[i:i + 20] for i in range(0, len(chosen), 20)]
+    print(
+        f"[QTC] Fetching {len(chunks)} monthly chunks, "
+        f"{len(chosen)} symbols per call via /bars endpoint"
+    )
+    for chunk_start, chunk_end in chunks:
+        s_iso = _iso_no_tz(chunk_start)
+        e_iso = _iso_no_tz(chunk_end)
+        for batch in symbol_batches:
+            try:
+                bars_map = fetch_bars_multi(batch, s_iso, e_iso, cfg)
+            except Exception as e:
+                print(f"[WARN] {batch} {chunk_start.date()} -> {chunk_end.date()}: {e}")
+                time.sleep(cfg.sleep_between_calls)
+                continue
+            total_rows = 0
+            for s, df_chunk in bars_map.items():
+                if not df_chunk.empty:
+                    per_symbol_frames[s].append(df_chunk)
+                    total_rows += len(df_chunk)
+            print(
+                f"  {chunk_start.date()} -> {chunk_end.date()} "
+                f"[{','.join(batch)}]: {total_rows:,} rows"
+            )
+            time.sleep(cfg.sleep_between_calls)
+    return per_symbol_frames
+
+
+def _download_via_alpaca(cfg: Config, chosen: list[str]) -> dict[str, list[pd.DataFrame]]:
+    print(
+        f"[ALPACA] Downloading {len(chosen)} symbols (1-minute bars) "
+        f"{cfg.start_date} -> {cfg.end_date}"
+    )
+    bars_map = fetch_from_alpaca(chosen, cfg.start_date, cfg.end_date)
+    per_symbol_frames: dict[str, list[pd.DataFrame]] = {s: [] for s in chosen}
+    for s, df in bars_map.items():
+        if not df.empty:
+            per_symbol_frames[s].append(df)
+        print(f"  {s}: {len(df):,} rows")
+    return per_symbol_frames
+
+
+def _download_via_yfinance(cfg: Config, chosen: list[str]) -> dict[str, list[pd.DataFrame]]:
+    print(
+        f"[YFINANCE] Downloading {len(chosen)} symbols at interval={YF_INTERVAL} "
+        f"{cfg.start_date} -> {cfg.end_date}"
+    )
+    bars_map = fetch_from_yfinance(chosen, cfg.start_date, cfg.end_date, interval=YF_INTERVAL)
+    per_symbol_frames: dict[str, list[pd.DataFrame]] = {s: [] for s in chosen}
+    for s, df in bars_map.items():
+        if not df.empty:
+            per_symbol_frames[s].append(df)
+        print(f"  {s}: {len(df):,} rows")
+    return per_symbol_frames
+
+
+def _download_via_stooq(cfg: Config, chosen: list[str]) -> dict[str, list[pd.DataFrame]]:
+    print(
+        f"[STOOQ] Downloading {len(chosen)} symbols (daily bars) "
+        f"{cfg.start_date} -> {cfg.end_date}"
+    )
+    bars_map = fetch_from_stooq(chosen, cfg.start_date, cfg.end_date)
+    per_symbol_frames: dict[str, list[pd.DataFrame]] = {s: [] for s in chosen}
+    for s, df in bars_map.items():
+        if not df.empty:
+            per_symbol_frames[s].append(df)
+        print(f"  {s}: {len(df):,} rows")
+    return per_symbol_frames
+
+
+def _resolve_universe(cfg: Config) -> list[str]:
+    """
+    Determine the symbols to fetch. When using QTC, filter by its /symbols list.
+    When using yfinance / stooq, trust the user-provided tickers (Yahoo and stooq
+    cover a much wider universe than QTC, including SMH / SOXX).
+    """
+    all_requested = list(dict.fromkeys(cfg.target_symbols + cfg.proxy_symbols))
+    if DATA_SOURCE in ("qtc", "auto"):
+        try:
+            symbols_info = get_available_symbols(cfg)
+            available = set(map(str.upper, symbols_info.get("symbols", [])))
+        except Exception as e:
+            print(f"[WARN] Could not list QTC symbols: {e}")
+            available = set(map(str.upper, all_requested))
+        chosen = [s.upper() for s in all_requested if s.upper() in available]
+        missing = [s.upper() for s in all_requested if s.upper() not in available]
+        print("Chosen symbols:", chosen)
+        if missing:
+            print("Skipped (not on QTC):", missing)
+        return chosen
+    return [s.upper() for s in all_requested]
+
+
+def download_all_raw(cfg: Config) -> pd.DataFrame:
+    chosen = _resolve_universe(cfg)
+    if not chosen:
+        raise RuntimeError("No valid symbols to fetch.")
+
+    source = DATA_SOURCE
+    per_symbol_frames: dict[str, list[pd.DataFrame]] = {s: [] for s in chosen}
+
+    if source == "auto":
+        # Step 1: try QTC
+        if _probe_qtc_alive(cfg, chosen[0]):
+            print("[AUTO] QTC /bars is alive, using QTC")
+            per_symbol_frames = _download_via_qtc(cfg, chosen)
+            if sum(len(fs) for fs in per_symbol_frames.values()) == 0:
+                print("[AUTO] QTC returned 0 rows, falling through...")
+                source = "fallback"
+        else:
+            print("[AUTO] QTC /bars is down, trying Alpaca next...")
+            source = "fallback"
+
+        # Step 2: Alpaca (minute-level, same IEX feed as QTC)
+        if source == "fallback":
+            if ALPACA_API_KEY and ALPACA_SECRET_KEY:
+                try:
+                    per_symbol_frames = _download_via_alpaca(cfg, chosen)
+                    if sum(len(fs) for fs in per_symbol_frames.values()) > 0:
+                        source = "done"
+                    else:
+                        print("[AUTO] Alpaca returned 0 rows, trying yfinance...")
+                except Exception as e:
+                    print(f"[AUTO] Alpaca failed ({e}), trying yfinance...")
+            else:
+                print("[AUTO] No Alpaca credentials, trying yfinance...")
+
+        # Step 3: yfinance
+        if source == "fallback":
+            try:
+                per_symbol_frames = _download_via_yfinance(cfg, chosen)
+                if sum(len(fs) for fs in per_symbol_frames.values()) > 0:
+                    source = "done"
+                else:
+                    print("[AUTO] yfinance returned 0 rows, trying stooq...")
+            except Exception as e:
+                print(f"[AUTO] yfinance failed ({e}), trying stooq...")
+
+        # Step 4: stooq (last resort, daily only)
+        if source == "fallback":
+            per_symbol_frames = _download_via_stooq(cfg, chosen)
+
+    elif source == "qtc":
+        per_symbol_frames = _download_via_qtc(cfg, chosen)
+    elif source == "alpaca":
+        per_symbol_frames = _download_via_alpaca(cfg, chosen)
+    elif source == "yfinance":
+        per_symbol_frames = _download_via_yfinance(cfg, chosen)
+    elif source == "stooq":
+        per_symbol_frames = _download_via_stooq(cfg, chosen)
+    else:
+        raise RuntimeError(f"Unknown DATA_SOURCE: {source}")
+
+    all_frames = []
+    for symbol, frames in per_symbol_frames.items():
+        if not frames:
+            print(f"[WARN] No data downloaded for {symbol}")
+            continue
+        df_symbol = (
+            pd.concat(frames, ignore_index=True)
+            .drop_duplicates(subset=["symbol", "timestamp"])
+            .sort_values(["symbol", "timestamp"])
+            .reset_index(drop=True)
+        )
+        out_path = RAW_DIR / f"{symbol}.parquet"
+        df_symbol.to_parquet(out_path, index=False)
+        print(f"Saved {symbol}: {len(df_symbol):,} rows -> {out_path}")
+        all_frames.append(df_symbol)
+
+    if not all_frames:
+        raise RuntimeError("No raw data downloaded.")
+
+    raw_all = (
+        pd.concat(all_frames, ignore_index=True)
+        .drop_duplicates(subset=["symbol", "timestamp"])
+        .sort_values(["symbol", "timestamp"])
+        .reset_index(drop=True)
+    )
+    raw_all.to_parquet(COMBINED_DIR / "raw_all.parquet", index=False)
+    print(f"\nSaved combined raw data: {len(raw_all):,} rows")
+    return raw_all
+
+
+# -----------------------------
+# Feature engineering
+# -----------------------------
+def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
+    # Keep UTC timestamp, but also derive NY trading session features
+    ts_ny = df["timestamp"].dt.tz_convert("America/New_York")
+    df["date_ny"] = ts_ny.dt.date.astype(str)
+    df["hour_ny"] = ts_ny.dt.hour
+    df["minute_ny"] = ts_ny.dt.minute
+    df["minute_of_day_ny"] = df["hour_ny"] * 60 + df["minute_ny"]
+
+    # simple session buckets
+    df["is_open_window"] = ((df["hour_ny"] == 9) & (df["minute_ny"] >= 30)) | (df["hour_ny"] == 10)
+    df["is_midday"] = (df["hour_ny"] >= 11) & (df["hour_ny"] <= 13)
+    df["is_late_day"] = (df["hour_ny"] >= 15)
+    return df
+
+
+def build_volume_baseline(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build a simple 'normal volume curve' by symbol x minute_of_day, using historical median volume.
+    """
+    vol_base = (
+        df.groupby(["symbol", "minute_of_day_ny"], as_index=False)["volume"]
+        .median()
+        .rename(columns={"volume": "volume_baseline_median"})
+    )
+    df = df.merge(vol_base, on=["symbol", "minute_of_day_ny"], how="left")
+    df["volume_surprise"] = df["volume"] / df["volume_baseline_median"]
+    df["volume_surprise"] = df["volume_surprise"].replace([np.inf, -np.inf], np.nan)
+    return df
+
+
+def add_symbol_features(df_symbol: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    df = df_symbol.copy().sort_values("timestamp").reset_index(drop=True)
+
+    # Basic returns
+    df["ret_1m"] = df["close"].pct_change()
+    df["log_ret_1m"] = np.log(df["close"]).diff()
+
+    # Trend
+    df["ma_fast"] = df["close"].rolling(cfg.fast_window, min_periods=cfg.fast_window).mean()
+    df["ma_slow"] = df["close"].rolling(cfg.slow_window, min_periods=cfg.slow_window).mean()
+    df["price_minus_fast"] = df["close"] - df["ma_fast"]
+    df["fast_minus_slow"] = df["ma_fast"] - df["ma_slow"]
+    df["trend_strength"] = df["fast_minus_slow"] / df["close"]
+
+    # Volatility
+    df["rolling_vol"] = df["ret_1m"].rolling(cfg.vol_window, min_periods=cfg.vol_window).std()
+    df["abs_ret_5m"] = df["ret_1m"].rolling(5, min_periods=5).apply(lambda x: np.abs(x).sum(), raw=True)
+    df["hl_range"] = (df["high"] - df["low"]) / df["close"]
+
+    # VWAP
+    if "vwap" in df.columns:
+        df["vwap_dev"] = (df["close"] - df["vwap"]) / df["close"]
+    else:
+        df["vwap_dev"] = np.nan
+
+    # Baseline signal
+    df["long_signal_baseline"] = (
+        (df["close"] > df["ma_fast"]) &
+        (df["ma_fast"] > df["ma_slow"])
+    ).astype(int)
+
+    df["short_signal_baseline"] = (
+        (df["close"] < df["ma_fast"]) &
+        (df["ma_fast"] < df["ma_slow"])
+    ).astype(int)
+
+    # Simple regimes
+    vol_med = df["rolling_vol"].median(skipna=True)
+    trend_med = df["trend_strength"].abs().median(skipna=True)
+
+    df["is_high_vol"] = (df["rolling_vol"] > vol_med).astype(float)
+    df["is_strong_trend"] = (df["trend_strength"].abs() > trend_med).astype(float)
+    df["is_uptrend"] = (
+        (df["close"] > df["ma_fast"]) &
+        (df["ma_fast"] > df["ma_slow"])
+    ).astype(float)
+    df["is_downtrend"] = (
+        (df["close"] < df["ma_fast"]) &
+        (df["ma_fast"] < df["ma_slow"])
+    ).astype(float)
+
+    # Dynamic stop research vars
+    df["stop_width_pct"] = cfg.stop_k * df["rolling_vol"]
+    df["distance_to_long_stop_pct"] = np.where(
+        df["long_signal_baseline"] == 1,
+        (df["close"] - df["close"] * (1 - df["stop_width_pct"])) / df["close"],
+        np.nan,
+    )
+    df["distance_to_short_stop_pct"] = np.where(
+        df["short_signal_baseline"] == 1,
+        ((df["close"] * (1 + df["stop_width_pct"])) - df["close"]) / df["close"],
+        np.nan,
+    )
+
+    # Future return labels
+    for h in cfg.future_horizons:
+        df[f"fwd_ret_{h}m"] = df["close"].shift(-h) / df["close"] - 1.0
+
+    return df
+
+
+def attach_proxy_features(panel: pd.DataFrame, proxy_symbols: list[str]) -> pd.DataFrame:
+    """
+    Merge proxy returns / vol / trend onto each row by timestamp.
+    """
+    out = panel.copy()
+
+    for px in proxy_symbols:
+        px_df = (
+            out.loc[out["symbol"] == px, [
+                "timestamp", "ret_1m", "rolling_vol", "trend_strength",
+                "is_high_vol", "is_uptrend", "is_downtrend"
+            ]]
+            .copy()
+            .rename(columns={
+                "ret_1m": f"{px}_ret_1m",
+                "rolling_vol": f"{px}_rolling_vol",
+                "trend_strength": f"{px}_trend_strength",
+                "is_high_vol": f"{px}_is_high_vol",
+                "is_uptrend": f"{px}_is_uptrend",
+                "is_downtrend": f"{px}_is_downtrend",
+            })
+        )
+        out = out.merge(px_df, on="timestamp", how="left")
+
+    return out
+
+
+def build_research_panel(raw_all: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    df = raw_all.copy()
+
+    # Basic cleaning
+    df = df.dropna(subset=["timestamp", "close"]).copy()
+    df = df[df["close"] > 0].copy()
+
+    # If missing numeric columns, create them
+    for c in ["open", "high", "low", "close", "volume", "trade_count", "vwap"]:
+        if c not in df.columns:
+            df[c] = np.nan
+
+    # time features
+    df = add_time_features(df)
+
+    # volume baseline
+    df = build_volume_baseline(df)
+
+    # per-symbol features
+    pieces = []
+    for symbol, g in df.groupby("symbol", sort=True):
+        feat = add_symbol_features(g, cfg)
+        pieces.append(feat)
+
+    panel = pd.concat(pieces, ignore_index=True)
+    panel = panel.sort_values(["symbol", "timestamp"]).reset_index(drop=True)
+
+    # attach proxies
+    panel = attach_proxy_features(panel, cfg.proxy_symbols)
+
+    # Keep a clean research-ready column order
+    priority_cols = [
+        "timestamp", "date_ny", "symbol", "ticker",
+        "open", "high", "low", "close", "volume", "trade_count", "vwap",
+        "hour_ny", "minute_ny", "minute_of_day_ny",
+        "is_open_window", "is_midday", "is_late_day",
+        "ret_1m", "log_ret_1m",
+        "ma_fast", "ma_slow", "price_minus_fast", "fast_minus_slow", "trend_strength",
+        "rolling_vol", "abs_ret_5m", "hl_range",
+        "vwap_dev", "volume_baseline_median", "volume_surprise",
+        "long_signal_baseline", "short_signal_baseline",
+        "is_high_vol", "is_strong_trend", "is_uptrend", "is_downtrend",
+        "stop_width_pct", "distance_to_long_stop_pct", "distance_to_short_stop_pct",
+    ] + [f"fwd_ret_{h}m" for h in cfg.future_horizons]
+
+    proxy_cols = [c for c in panel.columns if any(c.startswith(px + "_") for px in cfg.proxy_symbols)]
+    final_cols = [c for c in priority_cols if c in panel.columns] + proxy_cols
+
+    panel = panel[final_cols + [c for c in panel.columns if c not in final_cols]]
+
+    # Save
+    panel.to_parquet(COMBINED_DIR / "research_panel.parquet", index=False)
+    panel.to_csv(COMBINED_DIR / "research_panel.csv", index=False)
+
+    return panel
+
+
+# -----------------------------
+# Main
+# -----------------------------
+def main():
+    print("=== QTC Research Data Pipeline ===")
+    print(json.dumps(CFG.__dict__, indent=2, default=str))
+
+    raw_all = download_all_raw(CFG)
+    panel = build_research_panel(raw_all, CFG)
+
+    print("\n=== Done ===")
+    print(f"Raw rows      : {len(raw_all):,}")
+    print(f"Panel rows    : {len(panel):,}")
+    print(f"Saved raw     : {COMBINED_DIR / 'raw_all.parquet'}")
+    print(f"Saved panel   : {COMBINED_DIR / 'research_panel.parquet'}")
+    print(f"Saved csv     : {COMBINED_DIR / 'research_panel.csv'}")
+
+    # Quick sanity check
+    print("\nPanel head:")
+    print(panel.head(10).to_string())
+
+
+if __name__ == "__main__":
+    main()

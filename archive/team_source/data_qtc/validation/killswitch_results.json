@@ -1,0 +1,162 @@
+[
+  {
+    "window": "TECH_BEAR_2022",
+    "variant": "V3_no_killswitch",
+    "sharpe": -2.802,
+    "ann_pct": -40.83,
+    "maxdd_pct": -28.46,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "TECH_BEAR_2022",
+    "variant": "V3_kill_sma50",
+    "sharpe": -2.718,
+    "ann_pct": -20.71,
+    "maxdd_pct": -14.21,
+    "regime_on_pct": 39.98
+  },
+  {
+    "window": "TECH_BEAR_2022",
+    "variant": "V3_kill_sma100",
+    "sharpe": -2.05,
+    "ann_pct": -16.81,
+    "maxdd_pct": -12.44,
+    "regime_on_pct": 43.2
+  },
+  {
+    "window": "TECH_BEAR_2022",
+    "variant": "V3_kill_sma200",
+    "sharpe": -1.354,
+    "ann_pct": -11.87,
+    "maxdd_pct": -12.71,
+    "regime_on_pct": 51.27
+  },
+  {
+    "window": "POST_BEAR_2023",
+    "variant": "V3_no_killswitch",
+    "sharpe": -2.934,
+    "ann_pct": -30.86,
+    "maxdd_pct": -14.57,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "POST_BEAR_2023",
+    "variant": "V3_kill_sma50",
+    "sharpe": -1.51,
+    "ann_pct": -12.81,
+    "maxdd_pct": -8.76,
+    "regime_on_pct": 67.86
+  },
+  {
+    "window": "POST_BEAR_2023",
+    "variant": "V3_kill_sma100",
+    "sharpe": -2.99,
+    "ann_pct": -30.47,
+    "maxdd_pct": -14.43,
+    "regime_on_pct": 78.99
+  },
+  {
+    "window": "POST_BEAR_2023",
+    "variant": "V3_kill_sma200",
+    "sharpe": -2.934,
+    "ann_pct": -30.86,
+    "maxdd_pct": -14.57,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "BACK_OOS_2024",
+    "variant": "V3_no_killswitch",
+    "sharpe": -0.733,
+    "ann_pct": -11.68,
+    "maxdd_pct": -16.46,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "BACK_OOS_2024",
+    "variant": "V3_kill_sma50",
+    "sharpe": -1.808,
+    "ann_pct": -23.63,
+    "maxdd_pct": -14.08,
+    "regime_on_pct": 78.1
+  },
+  {
+    "window": "BACK_OOS_2024",
+    "variant": "V3_kill_sma100",
+    "sharpe": -2.003,
+    "ann_pct": -28.55,
+    "maxdd_pct": -17.71,
+    "regime_on_pct": 89.31
+  },
+  {
+    "window": "BACK_OOS_2024",
+    "variant": "V3_kill_sma200",
+    "sharpe": -0.733,
+    "ann_pct": -11.68,
+    "maxdd_pct": -16.46,
+    "regime_on_pct": 98.59
+  },
+  {
+    "window": "IS_2025_2026Q1",
+    "variant": "V3_no_killswitch",
+    "sharpe": 1.537,
+    "ann_pct": 22.45,
+    "maxdd_pct": -8.57,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "IS_2025_2026Q1",
+    "variant": "V3_kill_sma50",
+    "sharpe": 0.7,
+    "ann_pct": 4.88,
+    "maxdd_pct": -4.81,
+    "regime_on_pct": 46.04
+  },
+  {
+    "window": "IS_2025_2026Q1",
+    "variant": "V3_kill_sma100",
+    "sharpe": 1.061,
+    "ann_pct": 10.33,
+    "maxdd_pct": -6.94,
+    "regime_on_pct": 51.42
+  },
+  {
+    "window": "IS_2025_2026Q1",
+    "variant": "V3_kill_sma200",
+    "sharpe": 1.118,
+    "ann_pct": 11.32,
+    "maxdd_pct": -6.94,
+    "regime_on_pct": 53.89
+  },
+  {
+    "window": "FWD_OOS_2026Q2",
+    "variant": "V3_no_killswitch",
+    "sharpe": 1.619,
+    "ann_pct": 18.73,
+    "maxdd_pct": -2.73,
+    "regime_on_pct": 100.0
+  },
+  {
+    "window": "FWD_OOS_2026Q2",
+    "variant": "V3_kill_sma50",
+    "sharpe": 2.378,
+    "ann_pct": 25.61,
+    "maxdd_pct": -2.73,
+    "regime_on_pct": 77.27
+  },
+  {
+    "window": "FWD_OOS_2026Q2",
+    "variant": "V3_kill_sma100",
+    "sharpe": 2.779,
+    "ann_pct": 28.94,
+    "maxdd_pct": -2.73,
+    "regime_on_pct": 41.95
+  },
+  {
+    "window": "FWD_OOS_2026Q2",
+    "variant": "V3_kill_sma200",
+    "sharpe": 0.0,
+    "ann_pct": 0.0,
+    "maxdd_pct": 0.0,
+    "regime_on_pct": 0.0
+  }
+]

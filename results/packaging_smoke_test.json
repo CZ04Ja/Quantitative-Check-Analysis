@@ -1,0 +1,10 @@
+{
+  "run_date": "2026-10-29",
+  "result": {
+    "synthetic": true,
+    "beta_known_value_test": true,
+    "beta_current_bar_not_used": true,
+    "first_full_z_row": 619,
+    "scope": "Signal and warm-up mechanics only; not original QTC PnL replication"
+  }
+}

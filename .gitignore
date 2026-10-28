@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+data_private/
+raw_data/
+local_results/
+*.pem
+*.key
