@@ -1,0 +1,209 @@
+{
+  "rows": [
+    {
+      "z_in": 2.0,
+      "cost_bps": 1.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.839,
+      "ann_pct": 4.08,
+      "maxdd_pct": -3.23,
+      "n_trades": 57,
+      "cost_share": 0.35
+    },
+    {
+      "z_in": 2.0,
+      "cost_bps": 1.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 0.147,
+      "ann_pct": 2.77,
+      "maxdd_pct": -26.75,
+      "n_trades": 1089,
+      "cost_share": 0.871
+    },
+    {
+      "z_in": 2.0,
+      "cost_bps": 3.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": -0.066,
+      "ann_pct": -0.32,
+      "maxdd_pct": -4.14,
+      "n_trades": 57,
+      "cost_share": 1.051
+    },
+    {
+      "z_in": 2.0,
+      "cost_bps": 3.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": -1.842,
+      "ann_pct": -34.72,
+      "maxdd_pct": -42.71,
+      "n_trades": 1089,
+      "cost_share": 2.613
+    },
+    {
+      "z_in": 2.25,
+      "cost_bps": 1.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 1.006,
+      "ann_pct": 4.79,
+      "maxdd_pct": -2.91,
+      "n_trades": 49,
+      "cost_share": 0.284
+    },
+    {
+      "z_in": 2.25,
+      "cost_bps": 1.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 1.074,
+      "ann_pct": 19.77,
+      "maxdd_pct": -12.65,
+      "n_trades": 874,
+      "cost_share": 0.434
+    },
+    {
+      "z_in": 2.25,
+      "cost_bps": 3.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.208,
+      "ann_pct": 0.99,
+      "maxdd_pct": -3.39,
+      "n_trades": 49,
+      "cost_share": 0.852
+    },
+    {
+      "z_in": 2.25,
+      "cost_bps": 3.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": -0.577,
+      "ann_pct": -10.59,
+      "maxdd_pct": -22.39,
+      "n_trades": 874,
+      "cost_share": 1.303
+    },
+    {
+      "z_in": 2.5,
+      "cost_bps": 1.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.772,
+      "ann_pct": 3.74,
+      "maxdd_pct": -2.8,
+      "n_trades": 41,
+      "cost_share": 0.304
+    },
+    {
+      "z_in": 2.5,
+      "cost_bps": 1.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 1.106,
+      "ann_pct": 19.33,
+      "maxdd_pct": -13.02,
+      "n_trades": 699,
+      "cost_share": 0.387
+    },
+    {
+      "z_in": 2.5,
+      "cost_bps": 3.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.099,
+      "ann_pct": 0.48,
+      "maxdd_pct": -3.41,
+      "n_trades": 41,
+      "cost_share": 0.911
+    },
+    {
+      "z_in": 2.5,
+      "cost_bps": 3.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": -0.29,
+      "ann_pct": -5.05,
+      "maxdd_pct": -14.84,
+      "n_trades": 699,
+      "cost_share": 1.16
+    },
+    {
+      "z_in": 2.75,
+      "cost_bps": 1.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 1.005,
+      "ann_pct": 3.94,
+      "maxdd_pct": -2.29,
+      "n_trades": 26,
+      "cost_share": 0.206
+    },
+    {
+      "z_in": 2.75,
+      "cost_bps": 1.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 1.654,
+      "ann_pct": 27.81,
+      "maxdd_pct": -8.24,
+      "n_trades": 581,
+      "cost_share": 0.269
+    },
+    {
+      "z_in": 2.75,
+      "cost_bps": 3.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.482,
+      "ann_pct": 1.89,
+      "maxdd_pct": -2.58,
+      "n_trades": 26,
+      "cost_share": 0.618
+    },
+    {
+      "z_in": 2.75,
+      "cost_bps": 3.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 0.44,
+      "ann_pct": 7.38,
+      "maxdd_pct": -10.51,
+      "n_trades": 581,
+      "cost_share": 0.806
+    },
+    {
+      "z_in": 3.0,
+      "cost_bps": 1.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": 0.233,
+      "ann_pct": 0.84,
+      "maxdd_pct": -3.66,
+      "n_trades": 23,
+      "cost_share": 0.511
+    },
+    {
+      "z_in": 3.0,
+      "cost_bps": 1.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": 0.355,
+      "ann_pct": 5.55,
+      "maxdd_pct": -12.73,
+      "n_trades": 485,
+      "cost_share": 0.612
+    },
+    {
+      "z_in": 3.0,
+      "cost_bps": 3.0,
+      "window": "BACK_OOS_2024",
+      "sharpe": -0.255,
+      "ann_pct": -0.92,
+      "maxdd_pct": -4.01,
+      "n_trades": 23,
+      "cost_share": 1.534
+    },
+    {
+      "z_in": 3.0,
+      "cost_bps": 3.0,
+      "window": "IS_2025_2026Q1",
+      "sharpe": -0.764,
+      "ann_pct": -11.94,
+      "maxdd_pct": -20.43,
+      "n_trades": 485,
+      "cost_share": 1.835
+    }
+  ],
+  "accepted_pareto": [
+    2.25,
+    2.75
+  ],
+  "decision": "Adopt z_in=2.25"
+}

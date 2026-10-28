@@ -1,0 +1,102 @@
+{
+  "summary": [
+    {
+      "label": "BACK_OOS_2024",
+      "start": "2024-01-01",
+      "end": "2024-12-31",
+      "aligned_bars": 40255,
+      "trading_days_equiv": 103.2,
+      "sharpe": -1.402,
+      "sortino": -0.193,
+      "ann_return_pct": -3.91,
+      "max_dd_pct": -3.12,
+      "calmar": -1.254,
+      "bar_hit_rate": 0.0055,
+      "avg_gross_exposure": 0.0078,
+      "daily_turnover_x": 59.397,
+      "cost_share": 0.428,
+      "global_gate_on_pct": 3.39,
+      "per_stock_gate_on_pct": 9.6,
+      "fresh_entries_total": 29,
+      "fresh_entries_per_day": 0.281,
+      "fresh_entries_per_symbol": {
+        "AAPL": 11,
+        "AMD": 0,
+        "MSFT": 13,
+        "NVDA": 5
+      }
+    },
+    {
+      "label": "IS_2025_2026Q1",
+      "start": "2025-01-01",
+      "end": "2026-03-31",
+      "aligned_bars": 91577,
+      "trading_days_equiv": 234.8,
+      "sharpe": 0.554,
+      "sortino": 0.181,
+      "ann_return_pct": 6.17,
+      "max_dd_pct": -20.9,
+      "calmar": 0.295,
+      "bar_hit_rate": 0.0349,
+      "avg_gross_exposure": 0.0659,
+      "daily_turnover_x": 45.896,
+      "cost_share": 0.4913,
+      "global_gate_on_pct": 22.28,
+      "per_stock_gate_on_pct": 48.68,
+      "fresh_entries_total": 453,
+      "fresh_entries_per_day": 1.929,
+      "fresh_entries_per_symbol": {
+        "AAPL": 110,
+        "AMD": 87,
+        "MSFT": 123,
+        "NVDA": 133
+      }
+    },
+    {
+      "label": "FWD_OOS_2026Q2",
+      "start": "2026-04-01",
+      "end": "2027-01-01",
+      "aligned_bars": 7607,
+      "trading_days_equiv": 19.5,
+      "sharpe": 0.703,
+      "sortino": 0.0,
+      "ann_return_pct": 74.35,
+      "max_dd_pct": -0.01,
+      "calmar": 7434.522,
+      "bar_hit_rate": 0.0001,
+      "avg_gross_exposure": 0.0001,
+      "daily_turnover_x": 780.0,
+      "cost_share": 0.8604,
+      "global_gate_on_pct": 0.01,
+      "per_stock_gate_on_pct": 56.19,
+      "fresh_entries_total": 2,
+      "fresh_entries_per_day": 0.103,
+      "fresh_entries_per_symbol": {
+        "AAPL": 1,
+        "AMD": 0,
+        "MSFT": 1,
+        "NVDA": 0
+      }
+    }
+  ],
+  "bootstrap": {
+    "BACK_OOS_2024": {
+      "n_iter": 2000,
+      "median": -1.3827605380918935,
+      "p05": -3.3400029092149905,
+      "p25": -2.212714966419986,
+      "p75": -0.45077469950160054,
+      "p95": 1.0688394329632498,
+      "p_gt_0": 0.156
+    },
+    "FWD_OOS_2026Q2": {
+      "n_iter": 2000,
+      "median": 0.7316314403947088,
+      "p05": 0.0,
+      "p25": 0.0,
+      "p75": 1.0346859233904317,
+      "p95": 1.2672297291967622,
+      "p_gt_0": 0.6665
+    }
+  }
+}

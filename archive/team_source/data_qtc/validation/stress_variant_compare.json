@@ -1,0 +1,122 @@
+[
+  {
+    "variant": "V1_LS",
+    "sharpe_1bp": -2.079,
+    "ann_pct": -30.44,
+    "maxdd_pct": -29.26,
+    "calmar": -1.04,
+    "n_trades": 290,
+    "per_sym_pnl_bps": {
+      "AAPL": 131.91,
+      "AMD": -1283.54,
+      "MSFT": -52.96,
+      "NVDA": -335.43
+    },
+    "window": "TECH_BEAR_2022"
+  },
+  {
+    "variant": "V1_LS_h120",
+    "sharpe_1bp": -2.174,
+    "ann_pct": -31.89,
+    "maxdd_pct": -29.81,
+    "calmar": -1.07,
+    "n_trades": 289,
+    "per_sym_pnl_bps": {
+      "AAPL": 131.91,
+      "AMD": -1400.23,
+      "MSFT": -61.08,
+      "NVDA": -309.68
+    },
+    "window": "TECH_BEAR_2022"
+  },
+  {
+    "variant": "V3_LO_h120",
+    "sharpe_1bp": -2.058,
+    "ann_pct": -24.72,
+    "maxdd_pct": -20.01,
+    "calmar": -1.236,
+    "n_trades": 155,
+    "per_sym_pnl_bps": {
+      "AAPL": 82.21,
+      "AMD": -916.94,
+      "MSFT": -3.87,
+      "NVDA": -534.82
+    },
+    "window": "TECH_BEAR_2022"
+  },
+  {
+    "variant": "RAW_NO_GATE",
+    "sharpe_1bp": -4.367,
+    "ann_pct": -110.27,
+    "maxdd_pct": -78.71,
+    "calmar": -1.401,
+    "n_trades": 834,
+    "per_sym_pnl_bps": {
+      "AAPL": 424.9,
+      "AMD": -3273.91,
+      "MSFT": -218.92,
+      "NVDA": -2808.52
+    },
+    "window": "TECH_BEAR_2022"
+  },
+  {
+    "variant": "V1_LS",
+    "sharpe_1bp": -1.328,
+    "ann_pct": -5.95,
+    "maxdd_pct": -4.35,
+    "calmar": -1.37,
+    "n_trades": 23,
+    "per_sym_pnl_bps": {
+      "AAPL": 19.09,
+      "AMD": -211.13,
+      "MSFT": -63.57,
+      "NVDA": 82.63
+    },
+    "window": "POST_BEAR_2023"
+  },
+  {
+    "variant": "V1_LS_h120",
+    "sharpe_1bp": -1.328,
+    "ann_pct": -5.95,
+    "maxdd_pct": -4.35,
+    "calmar": -1.37,
+    "n_trades": 23,
+    "per_sym_pnl_bps": {
+      "AAPL": 19.09,
+      "AMD": -211.13,
+      "MSFT": -63.57,
+      "NVDA": 82.63
+    },
+    "window": "POST_BEAR_2023"
+  },
+  {
+    "variant": "V3_LO_h120",
+    "sharpe_1bp": 0.197,
+    "ann_pct": 0.76,
+    "maxdd_pct": -2.49,
+    "calmar": 0.306,
+    "n_trades": 12,
+    "per_sym_pnl_bps": {
+      "AAPL": 80.59,
+      "AMD": -58.29,
+      "MSFT": 3.73,
+      "NVDA": 19.92
+    },
+    "window": "POST_BEAR_2023"
+  },
+  {
+    "variant": "RAW_NO_GATE",
+    "sharpe_1bp": -2.823,
+    "ann_pct": -50.91,
+    "maxdd_pct": -23.92,
+    "calmar": -2.128,
+    "n_trades": 416,
+    "per_sym_pnl_bps": {
+      "AAPL": -111.72,
+      "AMD": -1258.23,
+      "MSFT": -193.88,
+      "NVDA": 501.31
+    },
+    "window": "POST_BEAR_2023"
+  }
+]

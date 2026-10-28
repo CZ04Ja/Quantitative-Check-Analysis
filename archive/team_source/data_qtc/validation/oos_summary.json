@@ -1,0 +1,77 @@
+[
+  {
+    "label": "IS_2025_2026Q1",
+    "proxy": "XLK",
+    "aligned_bars": 91961,
+    "trading_days_equiv": 235.8,
+    "sharpe": 1.692,
+    "sortino": 0.497,
+    "ann_return_pct": 11.73,
+    "max_dd_pct": -4.81,
+    "calmar": 2.441,
+    "bar_hit_rate": 0.0209,
+    "avg_gross_exposure": 0.038,
+    "daily_turnover_x": 49.104,
+    "cost_share": 0.2859,
+    "global_gate_on_pct": 13.5,
+    "per_stock_gate_on_pct": 32.6,
+    "fresh_entries_total": 277,
+    "fresh_entries_per_day": 1.175,
+    "fresh_entries_per_symbol": {
+      "AAPL": 73,
+      "AMD": 39,
+      "MSFT": 85,
+      "NVDA": 80
+    }
+  },
+  {
+    "label": "BACK_OOS_2024",
+    "proxy": "XLK",
+    "aligned_bars": 40455,
+    "trading_days_equiv": 103.7,
+    "sharpe": -1.399,
+    "sortino": -0.192,
+    "ann_return_pct": -3.89,
+    "max_dd_pct": -3.12,
+    "calmar": -1.248,
+    "bar_hit_rate": 0.0055,
+    "avg_gross_exposure": 0.0078,
+    "daily_turnover_x": 59.397,
+    "cost_share": 0.428,
+    "global_gate_on_pct": 3.38,
+    "per_stock_gate_on_pct": 9.68,
+    "fresh_entries_total": 29,
+    "fresh_entries_per_day": 0.28,
+    "fresh_entries_per_symbol": {
+      "AAPL": 11,
+      "AMD": 0,
+      "MSFT": 13,
+      "NVDA": 5
+    }
+  },
+  {
+    "label": "FWD_OOS_2026Q2",
+    "proxy": "XLK",
+    "aligned_bars": 7607,
+    "trading_days_equiv": 19.5,
+    "sharpe": 0.0,
+    "sortino": 0.0,
+    "ann_return_pct": 0.0,
+    "max_dd_pct": 0.0,
+    "calmar": 0.0,
+    "bar_hit_rate": 0.0,
+    "avg_gross_exposure": 0.0,
+    "daily_turnover_x": 0.0,
+    "cost_share": 0.0,
+    "global_gate_on_pct": 0.0,
+    "per_stock_gate_on_pct": 0.0,
+    "fresh_entries_total": 0,
+    "fresh_entries_per_day": 0.0,
+    "fresh_entries_per_symbol": {
+      "AAPL": 0,
+      "AMD": 0,
+      "MSFT": 0,
+      "NVDA": 0
+    }
+  }
+]
